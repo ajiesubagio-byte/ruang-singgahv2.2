@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>RUANG SINGGAH</title>
+  <style>
+    body { font-family: "Poppins", sans-serif; background:#f8f9fa; color:#333; padding:20px; }
+    h1 { text-align:center; color:#2c3e50; margin-bottom:20px; }
+    form, .rekap-section { background:white; padding:18px; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.08); margin-bottom:20px; max-width:900px; margin-inline:auto; }
+    input, select { width:100%; padding:8px; margin:6px 0 12px; border-radius:6px; border:1px solid #ccc; }
+    button { background:#3498db; color:white; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:600; }
+    table { width:100%; border-collapse:collapse; margin-top:10px; }
+    th, td { padding:8px; border:1px solid #eee; text-align:center; }
+    th { background:#3498db; color:white; }
+    .small { width:110px; display:inline-block; margin-left:8px; }
+    .action-btn { padding:6px 8px; border:none; border-radius:6px; cursor:pointer; color:white; font-weight:600; }
+    .edit-btn { background:#f39c12; }
+    .delete-btn { background:#e74c3c; }
+    .flex { display:flex; gap:8px; align-items:center; justify-content:center; flex-wrap:wrap; }
+  </style>
+</head>
+<body>
+  <h1>RUANG SINGGAH (BOOKING)</h1>
+<h1>Samba ganteng</h1>
+<h1>naikan gaji admin</h1>
+  <form id="bookingForm">
+    <input type="hidden" id="editRowIndex" value="">
+    <label>Nama Admin</label>
+    <input id="admin" required />
+
+    <label>Nomor Kamar</label>
+    <select id="kamar" required>
+      <option value="">-- Pilih kamar --</option>
+      <option>Ruko 1</option>
+      <option>Ruko 2</option>
+      <option>Kamar 5</option>
+      <option>Kamar 6</option>
+      <option>Kamar 10</option>
+    </select>
+
+    <label>Tanggal Masuk</label>
+    <input id="tanggal" type="date" required />
+
+    <label>Jam Masuk</label>
+    <input id="jamMasuk" type="time" required />
+
+    <label>Jam Keluar</label>
+    <input id="jamKeluar" type="time" required />
+
+    <label>Harga (Rp)</label>
+    <input id="harga" type="number" required />
+
+    <label>Pembayaran</label>
+    <input id="pembayaran" required />
+
+    <div class="flex">
+      <button type="submit" id="submitBtn">Tambah Booking</button>
+      <button type="button" onclick="resetForm()">Reset Form</button>
+    </div>
+  </form>
+
+  <div style="max-width:900px;margin-inline:auto;">
+    <div style="background:white;padding:12px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:14px;">
+      <label>Filter booking berdasarkan tanggal:</label>
+      <input id="filterTanggal" type="date" class="small" />
+      <button onclick="applyBookingFilter()">Terapkan</button>
+      <button onclick="loadAll()">Reset</button>
+    </div>
+
+    <div id="roomsContainer"></div>
+  </div>
+
+  <div class="rekap-section">
+    <h2 style="margin-top:0">?? Rekap Keuangan</h2>
+    <div class="flex" style="justify-content:center;margin-bottom:10px;">
+      <label>Dari</label>
+      <input id="rekapStart" type="date" />
+      <label>Hingga</label>
+      <input id="rekapEnd" type="date" />
+      <button onclick="applyRekapFilter()">Terapkan</button>
+      <button onclick="resetRekapFilter()">Reset</button>
+    </div>
+
+    <h3>Rekap Harian</h3>
+<h3>naikan gaji admin</h3>
+
+    <table id="rekapHarian">
+      <thead>
+        <tr><th>Tanggal</th><th>Total Booking</th><th>Pendapatan Kotor</th><th>Potongan</th><th>Pendapatan Bersih</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <h3 style="margin-top:18px">Rekap Bulanan</h3>
+    <table id="rekapBulanan">
+      <thead>
+        <tr><th>Bulan</th><th>Total Booking</th><th>Pendapatan Kotor</th><th>Potongan</th><th>Pendapatan Bersih</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+<script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxjhrkcULRr36-j61TyE5wwoCzd9IfCqRD_BtLB821JegkDFpuFu2_mtXQX2Ljhsgbd/exec"; // <-- Ganti dengan Web App URL mu
+const ADMIN_FEE = 25000;
+const rooms = ["Ruko 1","Ruko 2","Kamar 5","Kamar 6","Kamar 10"];
+
+let bookings = []; // local cache
+
+// --- Init ---
+document.addEventListener("DOMContentLoaded", () => {
+  generateRoomTables();
+  loadAll();
+  document.getElementById("bookingForm").addEventListener("submit", handleSubmit);
+});
+
+// --- UI helpers ---
+function generateRoomTables(){
+  const container = document.getElementById("roomsContainer");
+  container.innerHTML = "";
+  rooms.forEach(room => {
+    const id = `table-${room.replace(/\s+/g,'')}`;
+    const html = `
+      <div style="background:white;padding:12px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:14px;">
+        <h3 style="margin:6px 0">${room}</h3>
+        <table id="${id}">
+          <thead>
+            <tr><th>Admin</th><th>Tanggal</th><th>Jam Masuk</th><th>Jam Keluar</th><th>Harga</th><th>Potongan</th><th>Bersih</th><th>Pembayaran</th><th>Aksi</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>`;
+    container.insertAdjacentHTML("beforeend", html);
+  });
+}
+
+function formatRupiah(n){
+  return 'Rp ' + Number(n || 0).toLocaleString();
+}
+
+function formatBulan(str){
+  if(!str) return "";
+  const [y,m] = str.split("-");
+  const nama = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+  return `${nama[Number(m)-1] || m} ${y}`;
+}
+
+// --- Load / Refresh ---
+async function loadAll(){
+  try{
+    const res = await fetch(`${SCRIPT_URL}?action=getAll`);
+    const data = await res.json();
+    bookings = data;
+    renderBookings();
+    renderRekap(); // full rekap (no filter)
+  }catch(err){
+    alert("Gagal load data: " + err.message);
+    console.error(err);
+  }
+}
+
+function renderBookings(filterDate = null){
+  rooms.forEach(room => {
+    const tbody = document.querySelector(`#table-${room.replace(/\s+/g,'')} tbody`);
+    tbody.innerHTML = "";
+    bookings
+      .filter(b => b.kamar === room && (!filterDate || b.tanggal === filterDate))
+      .forEach(b => {
+        const bersih = Number(b.harga || 0) - ADMIN_FEE;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${escapeHtml(b.admin)}</td>
+          <td>${b.tanggal}</td>
+          <td>${b.jamMasuk}</td>
+          <td>${b.jamKeluar}</td>
+          <td>${formatRupiah(b.harga)}</td>
+          <td>${formatRupiah(ADMIN_FEE)}</td>
+          <td>${formatRupiah(bersih)}</td>
+          <td>${escapeHtml(b.pembayaran)}</td>
+          <td>
+            <button class="action-btn edit-btn" onclick="startEdit(${b.rowIndex})">Edit</button>
+            <button class="action-btn delete-btn" onclick="confirmDelete(${b.rowIndex})">Hapus</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+  });
+}
+
+// --- Form handlers ---
+function resetForm(){
+  document.getElementById("bookingForm").reset();
+  document.getElementById("editRowIndex").value = "";
+  document.getElementById("submitBtn").textContent = "Tambah Booking";
+}
+
+function escapeHtml(s){ return (s===null || s===undefined) ? "" : String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function handleSubmit(e){
+  e.preventDefault();
+  const idx = document.getElementById("editRowIndex").value;
+  const payload = {
+    admin: document.getElementById("admin").value,
+    kamar: document.getElementById("kamar").value,
+    tanggal: document.getElementById("tanggal").value.trim(),
+    jamMasuk: document.getElementById("jamMasuk").value,
+    jamKeluar: document.getElementById("jamKeluar").value,
+    harga: Number(document.getElementById("harga").value) || 0,
+    pembayaran: document.getElementById("pembayaran").value
+  };
+
+  if (!payload.admin || !payload.kamar || !payload.tanggal) {
+    alert("Isi semua field wajib (Admin, Kamar, Tanggal).");
+    return;
+  }
+
+  try {
+    if (idx) {
+      // edit
+      const body = { action: "edit", rowIndex: Number(idx), new: payload };
+      await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(body) });
+      await loadAll();
+      resetForm();
+      alert("Berhasil disimpan.");
+    } else {
+      // add
+      const body = Object.assign({ action: "add" }, payload);
+      const res = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(body) });
+      const json = await res.json();
+      // To keep local sync, reload all
+      await loadAll();
+      resetForm();
+      if (json && json.rowIndex) {
+        // optional: highlight or scroll to new row
+      }
+      alert("Booking ditambahkan.");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Gagal menyimpan: " + err.message);
+  }
+}
+
+// --- Edit / Delete using rowIndex ---
+function startEdit(rowIndex){
+  const b = bookings.find(x => Number(x.rowIndex) === Number(rowIndex));
+  if (!b) return alert("Data tidak ditemukan (mungkin sudah dihapus).");
+  document.getElementById("admin").value = b.admin;
+  document.getElementById("kamar").value = b.kamar;
+  document.getElementById("tanggal").value = b.tanggal;
+  document.getElementById("jamMasuk").value = b.jamMasuk;
+  document.getElementById("jamKeluar").value = b.jamKeluar;
+  document.getElementById("harga").value = b.harga;
+  document.getElementById("pembayaran").value = b.pembayaran;
+  document.getElementById("editRowIndex").value = b.rowIndex;
+  document.getElementById("submitBtn").textContent = "Simpan Perubahan";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+async function confirmDelete(rowIndex){
+  if (!confirm("Yakin ingin menghapus booking ini?")) return;
+  try {
+    const body = { action: "delete", rowIndex: Number(rowIndex) };
+    await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(body) });
+    await loadAll();
+    alert("Booking dihapus.");
+  } catch (err) {
+    console.error(err);
+    alert("Gagal menghapus: " + err.message);
+  }
+}
+
+// --- Filters for bookings ---
+function applyBookingFilter(){
+  const d = document.getElementById("filterTanggal").value;
+  renderBookings(d || null);
+}
+
+// --- Rekap functions (calls Code.gs ?action=rekap&start=...&end=...) ---
+async function renderRekap(start = "", end = "") {
+  try {
+    const url = new URL(SCRIPT_URL);
+    url.searchParams.set("action","rekap");
+    if (start) url.searchParams.set("start", start);
+    if (end) url.searchParams.set("end", end);
+    const res = await fetch(url.toString());
+    const json = await res.json();
+    // harian
+    const harianBody = document.querySelector("#rekapHarian tbody");
+    harianBody.innerHTML = "";
+    const harian = json.harian || {};
+    Object.keys(harian).sort().forEach(dt => {
+      const val = harian[dt];
+      const kotor = val.total + (val.count * ADMIN_FEE);
+      harianBody.insertAdjacentHTML("beforeend", `
+        <tr>
+          <td>${dt}</td>
+          <td>${val.count}</td>
+          <td>${formatRupiah(kotor)}</td>
+          <td>${formatRupiah(val.count * ADMIN_FEE)}</td>
+          <td>${formatRupiah(val.total)}</td>
+        </tr>
+      `);
+    });
+
+    // bulanan
+    const bulananBody = document.querySelector("#rekapBulanan tbody");
+    bulananBody.innerHTML = "";
+    const bulanan = json.bulanan || {};
+    Object.keys(bulanan).sort().forEach(m => {
+      const val = bulanan[m];
+      const kotor = val.total + (val.count * ADMIN_FEE);
+      bulananBody.insertAdjacentHTML("beforeend", `
+        <tr>
+          <td>${formatBulan(m)}</td>
+          <td>${val.count}</td>
+          <td>${formatRupiah(kotor)}</td>
+          <td>${formatRupiah(val.count * ADMIN_FEE)}</td>
+          <td>${formatRupiah(val.total)}</td>
+        </tr>
+      `);
+    });
+
+  } catch (err) {
+    console.error(err);
+    alert("Gagal memuat rekap: " + err.message);
+  }
+}
+
+function applyRekapFilter(){
+  const s = document.getElementById("rekapStart").value;
+  const e = document.getElementById("rekapEnd").value;
+  renderRekap(s || "", e || "");
+}
+function resetRekapFilter(){ document.getElementById("rekapStart").value=""; document.getElementById("rekapEnd").value=""; renderRekap(); }
+
+// --- Utility: after changes, re-render bookings & rekap ---
+// (renderBookings uses 'bookings' cache; loadAll refreshes bookings and calls renderRekap)
+</script>
+</body>
+</html>
