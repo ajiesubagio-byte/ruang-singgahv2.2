@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>RUANG SINGGAH</title>
+  <title>Ruang Singgah</title>
   <style>
     body { font-family: "Poppins", sans-serif; background:#f8f9fa; color:#333; padding:20px; }
     h1 { text-align:center; color:#2c3e50; margin-bottom:20px; }
@@ -21,9 +21,9 @@
   </style>
 </head>
 <body>
-  <h1>RUANG SINGGAH (BOOKING)</h1>
-<h1>Subag syg rose</h1>
-<h1>naikan gaji admin</h1>
+  <h1>Ruang Singgah</h1>
+  <h1>samba ganteng</h1>
+
   <form id="bookingForm">
     <input type="hidden" id="editRowIndex" value="">
     <label>Nama Admin</label>
@@ -82,9 +82,7 @@
       <button onclick="resetRekapFilter()">Reset</button>
     </div>
 
-    <h3>Rekap Harian</h3>
-<h3>naikan gaji admin</h3>
-
+    <h3>Laporan Harian</h3>
     <table id="rekapHarian">
       <thead>
         <tr><th>Tanggal</th><th>Total Booking</th><th>Pendapatan Kotor</th><th>Potongan</th><th>Pendapatan Bersih</th></tr>
@@ -92,7 +90,7 @@
       <tbody></tbody>
     </table>
 
-    <h3 style="margin-top:18px">Rekap Bulanan</h3>
+    <h3 style="margin-top:18px">Laporan Bulanan</h3>
     <table id="rekapBulanan">
       <thead>
         <tr><th>Bulan</th><th>Total Booking</th><th>Pendapatan Kotor</th><th>Potongan</th><th>Pendapatan Bersih</th></tr>
@@ -102,7 +100,7 @@
   </div>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxjhrkcULRr36-j61TyE5wwoCzd9IfCqRD_BtLB821JegkDFpuFu2_mtXQX2Ljhsgbd/exec"; // <-- Ganti dengan Web App URL mu
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby8aX86s5MJm7gtJ1hrwKwuJCKYLwJmtNZff3k0KesO_UbKB9iQONTcE0Qx5_-gY1fD/exec"; // <-- Ganti dengan Web App URL mu
 const ADMIN_FEE = 25000;
 const rooms = ["Ruko 1","Ruko 2","Kamar 5","Kamar 6","Kamar 10"];
 
@@ -331,7 +329,13 @@ async function renderRekap(start = "", end = "") {
 function applyRekapFilter(){
   const s = document.getElementById("rekapStart").value;
   const e = document.getElementById("rekapEnd").value;
-  renderRekap(s || "", e || "");
+
+  if (!s || !e) {
+    alert("Pilih tanggal mulai dan sampai dulu.");
+    return;
+  }
+
+  renderRekap(s, e);
 }
 function resetRekapFilter(){ document.getElementById("rekapStart").value=""; document.getElementById("rekapEnd").value=""; renderRekap(); }
 
@@ -340,4 +344,3 @@ function resetRekapFilter(){ document.getElementById("rekapStart").value=""; doc
 </script>
 </body>
 </html>
-
