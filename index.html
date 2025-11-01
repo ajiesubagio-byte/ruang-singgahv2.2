@@ -32,8 +32,8 @@
     <label>Nomor Kamar</label>
     <select id="kamar" required>
       <option value="">-- Pilih kamar --</option>
-      <option>Ruko 1</option>
-      <option>Ruko 2</option>
+      <option>Ruko Anyar</option>
+      <option>Ruko Lawas</option>
       <option>Kamar 5</option>
       <option>Kamar 6</option>
       <option>Kamar 10</option>
@@ -102,7 +102,7 @@
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby8aX86s5MJm7gtJ1hrwKwuJCKYLwJmtNZff3k0KesO_UbKB9iQONTcE0Qx5_-gY1fD/exec"; // <-- Ganti dengan Web App URL mu
 const ADMIN_FEE = 25000;
-const rooms = ["Ruko 1","Ruko 2","Kamar 5","Kamar 6","Kamar 10"];
+const rooms = ["Ruko Anyar","Ruko Lawas","Kamar 5","Kamar 6","Kamar 10"];
 
 let bookings = []; // local cache
 
@@ -344,4 +344,5 @@ function resetRekapFilter(){ document.getElementById("rekapStart").value=""; doc
 </script>
 </body>
 </html>
+
 
